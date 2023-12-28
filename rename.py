@@ -19,7 +19,7 @@ def get_image_metadata(full_file_path):
 
     exif = {TAGS.get(k, k): v for k, v in exif_info.items()}
     if "DateTime" in exif:
-        dt_segments = exif['DateTime'].split()
+        dt_segments = exif["DateTime"].split()
         dt_segments[0] = dt_segments[0].replace(":", "-")
         return get_standard_time_format(" ".join(dt_segments))
     return None
@@ -27,7 +27,7 @@ def get_image_metadata(full_file_path):
 
 def get_video_metadata(full_file_path):
     video_metadata = ffmpeg.probe(full_file_path)
-    return get_standard_time_format(video_metadata['format']['tags']['creation_time'])
+    return get_standard_time_format(video_metadata["format"]["tags"]["creation_time"])
 
 
 def get_date_from_filename(filename):
@@ -61,15 +61,15 @@ if __name__ == "__main__":
     video_extensions = {".mp4", ".mov"}
 
     parser = argparse.ArgumentParser(
-        prog='rename.py',
-        description='Parse name and rename the file')
-    parser.add_argument('-d', '--directory')
-    parser.add_argument('-v', '--verbose', action='store_true')
-    parser.add_argument('--dry-run', action="store_true")
+        prog="rename.py",
+        description="Parse files for date metadata and rename files based off date values")
+    parser.add_argument("-d", "--directory", required=True, help="Directory to loop through")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument("--dry-run", action="store_true", help="Run without committing file renaming")
     args = parser.parse_args()
 
     if args.verbose:
-        print('Parsing directory: {0}. . .'.format(args.directory))
+        print("Parsing directory: {0}. . .".format(args.directory))
 
     register_heif_opener()
     occurrences = {}
