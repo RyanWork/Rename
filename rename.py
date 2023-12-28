@@ -2,6 +2,7 @@ import argparse
 import os
 from PIL import Image
 from PIL.ExifTags import TAGS
+from pillow_heif import register_heif_opener
 import ffmpeg
 from dateutil.parser import parse
 from os import listdir
@@ -12,7 +13,7 @@ import datetime
 
 def get_image_metadata(full_file_path):
     pil_img = Image.open(full_file_path)
-    exif_info = pil_img._getexif()
+    exif_info = pil_img.getexif()
     if exif_info is None:
         return None
 
@@ -56,7 +57,7 @@ def add_seconds(existing_date, secs):
 
 
 if __name__ == "__main__":
-    image_extensions = {".jpg", ".jpeg"}
+    image_extensions = {".jpg", ".jpeg", ".heic"}
     video_extensions = {".mp4", ".mov"}
 
     parser = argparse.ArgumentParser(
@@ -70,6 +71,7 @@ if __name__ == "__main__":
     if args.verbose:
         print('Parsing directory: {0}. . .'.format(args.directory))
 
+    register_heif_opener()
     occurrences = {}
     only_files = [f for f in listdir(args.directory) if not f.startswith('.') and isfile(join(args.directory, f))]
     for file in only_files:
@@ -102,4 +104,12 @@ if __name__ == "__main__":
                 print("File: {0} -- Date: {1}".format(file, date))
 
             if not args.dry_run:
-                os.rename(full_file_path, os.path.join(args.directory, rename))
+                retrySuccess = False
+                i = 1
+                while not retrySuccess:
+                    try:
+                        os.rename(full_file_path, os.path.join(args.directory, rename))
+                        retrySuccess = True
+                    except:
+                        rename = date + " ({0})".format(i) + file_extension
+                        i += 1
