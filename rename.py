@@ -47,8 +47,12 @@ def get_date_from_filename(filename):
 
 
 def get_standard_time_format(date_string):
-    dt = parse(date_string)
-    return dt.strftime("%Y-%m-%d %H-%M-%S")
+    parsed_date = parse(date_string)
+    if parsed_date.year < 2000:
+        # For funny cases where we can parse metadata, but this is clearly not a valid date
+        return None
+
+    return parsed_date.strftime("%Y-%m-%d %H-%M-%S")
 
 
 def add_seconds(existing_date, secs):
@@ -57,7 +61,7 @@ def add_seconds(existing_date, secs):
 
 
 if __name__ == "__main__":
-    image_extensions = {".jpg", ".jpeg", ".heic"}
+    image_extensions = {".jpg", ".jpeg", ".heic", ".png"}
     video_extensions = {".mp4", ".mov"}
 
     parser = argparse.ArgumentParser(
@@ -77,11 +81,15 @@ if __name__ == "__main__":
     for file in only_files:
         date = None
         full_file_path = join(args.directory, file)
-        _, file_extension = os.path.splitext(file)
-        if file_extension.lower() in image_extensions:
-            date = get_image_metadata(full_file_path)
-        elif file_extension.lower() in video_extensions:
-            date = get_video_metadata(full_file_path)
+        try:
+            _, file_extension = os.path.splitext(file)
+            if file_extension.lower() in image_extensions:
+                date = get_image_metadata(full_file_path)
+            elif file_extension.lower() in video_extensions:
+                date = get_video_metadata(full_file_path)
+        except KeyError:
+            print("ERROR! Could not find metadata for {0}".format(file))
+            continue
 
         if date is None:
             date, isValid = get_date_from_filename(file)
@@ -110,6 +118,6 @@ if __name__ == "__main__":
                     try:
                         os.rename(full_file_path, os.path.join(args.directory, rename))
                         retrySuccess = True
-                    except:
+                    except FileExistsError:
                         rename = date + " ({0})".format(i) + file_extension
                         i += 1
